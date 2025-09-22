@@ -1,5 +1,5 @@
 import datetime as dt
-# import pandas as pd
+import pandas as pd
 
 from parser.constants import DATE_FORMAT
 
@@ -16,20 +16,20 @@ def get_date_list(days_int) -> list[str]:
     return dates_list
 
 
-# def _split_campaign(column):
-#     with open(
-#         'prod/eapteka_campaign.txt',
-#         'r',
-#         encoding='utf-8'
-#     ) as file:
-#         campaign_list = [line.strip() for line in file]
+def _split_campaign(column):
+    with open(
+        'prod/eapteka_campaign.txt',
+        'r',
+        encoding='utf-8'
+    ) as file:
+        campaign_list = [line.strip() for line in file]
 
-#     df = pd.DataFrame({'campaign': campaign_list})
+    df = pd.DataFrame({'campaign': campaign_list})
 
-#     for i, value in enumerate(column):
-#         df[value] = df['campaign'].apply(
-#             lambda x: (
-#                 x + '-+all+'*((len(column)-1)-x.count('-'))
-#             ).split('-', len(column)-1)[i]
-#         )
-#     return df
+    for i, value in enumerate(column):
+        df[value] = df['campaign'].apply(
+            lambda x: (
+                x + '-+all+'*((len(column)-1)-x.count('-'))
+            ).split('-', len(column)-1)[i]
+        )
+    return df

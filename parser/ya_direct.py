@@ -44,15 +44,16 @@ class DirectSaveClient:
         self.folder = folder_name
         self.columns = columns
 
-    # def _split_campaign(self, column):
+    def _split_campaign(self, column):
+        df = pd.DataFrame()
 
-    #     for i, value in enumerate(self.columns):
-    #         df[value] = column.apply(
-    #             lambda x: (
-    #                 x + '-+all+'*((len(self.columns)-1)-x.count('-'))
-    #             ).split('-', len(self.columns)-1)[i]
-    #         )
-    #     return df
+        for i, value in enumerate(self.columns):
+            df[value] = column.apply(
+                lambda x: (
+                    str(x) + '-all'*((len(self.columns)-1)-str(x).count('-'))
+                ).split('-', len(self.columns)-1)[i]
+            )
+        return df
 
     def _decode_if_bytes(self, x: Any) -> Any:
         """
@@ -204,6 +205,8 @@ class DirectSaveClient:
                     header=1
                 )
                 df['Account'] = login
+                campaign_parts = self._split_campaign(df['CampaignName'])
+                df = pd.concat([df, campaign_parts], axis=1)
                 data_frames.append(df)
 
                 time.sleep(1)
@@ -231,9 +234,6 @@ class DirectSaveClient:
             sep=';',
             encoding='utf-8'
         )
-        # data['Site_type'] = data.apply(self._get_platform_type, axis=1)
-        # data['Type'] = data.apply(self._get_campaign_category, axis=1)
-
         return data
 
     def _get_filtered_cache_data(self, filename_data: str) -> pd.DataFrame:

@@ -49,7 +49,7 @@ DEFAULT_COLUMNS_CAMPAIGN = [
     'Generation_method',
     'Category',
     'Subject',
-    'Посадочная?'
+    'Url_type'
 ]
 
 REPORT_FIELDS_DIRECT = [
