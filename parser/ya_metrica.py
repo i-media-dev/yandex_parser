@@ -31,9 +31,9 @@ class YandexMetricaReports:
         token: str,
         dates_list: list,
         login: list,
+        counter_id: str,
         report_fields: list = REPORT_FIELDS_METRICA,
         columns: list = DEFAULT_COLUMNS_CAMPAIGN,
-        counter_id: str = EAPTEKA_ID,
         folder_name: str = DEFAULT_FOLDER,
         limit: int = METRICA_LIMIT
     ):
