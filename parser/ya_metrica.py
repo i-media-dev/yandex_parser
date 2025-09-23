@@ -1,4 +1,4 @@
-from datetime as dt
+# from datetime as dt
 import logging
 
 from dotenv import load_dotenv
@@ -8,31 +8,32 @@ import requests
 
 from parser.logging_config import setup_logging
 from parser.constants import (
-    CAMPAIGN_CATEGORIES,
-    CLIENT_LOGINS,
     DEFAULT_FOLDER,
-    DEFAULT_RETURNES,
-    PLATFORM_TYPES,
-    REPORT_FIELDS,
-    REPORT_NAME,
     YANDEX_METRICA_URL,
-    METRICA_ID,
-    METRICA_LIMIT
+    EAPTEKA_ID,
+    METRICA_LIMIT,
+    REPORT_FIELDS_METRICA,
+    DEFAULT_COLUMNS_CAMPAIGN,
+    DEFAULT_DELIMETER,
+    DEFAULT_VALUE,
+    DEVICES
 )
 
 setup_logging()
 load_dotenv()
 
 
-class MetricaSave:
+class YandexMetricaReports:
     """Класс для получения и сохранения данных отчетов из Яндекс.Метрики."""
 
     def __init__(
         self,
         token: str,
         dates_list: list,
-        counter_id: str = METRICA_ID,
-        login: list = CLIENT_LOGINS,
+        login: list,
+        report_fields: list = REPORT_FIELDS_METRICA,
+        columns: list = DEFAULT_COLUMNS_CAMPAIGN,
+        counter_id: str = EAPTEKA_ID,
         folder_name: str = DEFAULT_FOLDER,
         limit: int = METRICA_LIMIT
     ):
@@ -40,10 +41,35 @@ class MetricaSave:
             logging.error('Токен отсутствует или не действителен')
         self.token = token
         self.logins = login
+        self.report_fields = report_fields
+        self.columns = columns
         self.dates_list = dates_list
         self.counter_id = counter_id
         self.folder = folder_name
         self.limit = limit
+
+    def _split_campaign(
+        self,
+        column,
+        default_value: str = DEFAULT_VALUE,
+        delimeter: str = DEFAULT_DELIMETER
+    ):
+        df = pd.DataFrame()
+
+        for i, value in enumerate(self.columns):
+            df[value] = column.apply(
+                lambda x: (
+                    str(x) + default_value *
+                    ((len(self.columns)-1)-str(x).count(delimeter))
+                ).split('-', len(self.columns)-1)[i]
+            )
+        return df
+
+    def _rename_columns(self, df):
+        df['Devices'] = df['Device'].apply(lambda x: DEVICES.get(x))
+        del df['Device']
+        df.rename(columns={'Devices': 'Device'}, inplace=True)
+        return df
 
     def _get_file_path(self, filename: str) -> Path:
         """Защищенный метод. Создает путь к файлу в указанной папке."""
@@ -55,7 +81,7 @@ class MetricaSave:
             logging.error(f'Ошибка: {e}')
             raise
 
-    def _get_all_metrika_data(self) -> pd.DataFrame:
+    def _get_metrica_reports(self):
         """Получаем данные из Метрики."""
         start_date = self.dates_list[0]
         end_date = self.dates_list[-1]
@@ -66,7 +92,8 @@ class MetricaSave:
         params = {
             "ids": self.counter_id,
             "metrics": "ym:s:ecommercePurchases,ym:s:ecommerceRevenue",
-            "dimensions": "ym:s:date,ym:s:lastsignDirectClickOrder, ym:s:DeviceCategory",
+            "dimensions": "ym:s:date,ym:s:lastsignDirectClickOrder, "
+            "ym:s:DeviceCategory",
             "date1": start_date,
             "date2": end_date,
             "accuracy": "full",
@@ -79,46 +106,37 @@ class MetricaSave:
 
                 if not data or 'data' not in data or not data['data']:
                     logging.warning('Нет данных для кампании ')
-                    return pd.DataFrame()
+                    return []
 
-                data = data['data']
-                result = []
-
-                for i in data:
-                    if '-' in str(i['dimensions'][1]['name']):
-                        result.append(
-                            [
-                                i['dimensions'][0]['name'],
-                                i['dimensions'][1]['name'].split('|')[0],
-                                i['dimensions'][2]['name'],
-                                int(i['metrics'][0]),
-                                int(float(i['metrics'][1]))
-                            ]
-                        )
-                columns = [
-                    'Date',
-                    'CampaignName',
-                    'Device',
-                    'transactions',
-                    'revenue'
-                ]
-                df = pd.DataFrame(result, columns=columns)
-                df['sn'] = df.apply(self.add_ps, axis=1)
-                df['type'] = df.apply(self.add_type, axis=1)
-                df['apptype'] = df.apply(self.add_apptype, axis=1)
-                df['geo'] = df.apply(self._get_geo, axis=1)
-                df['Device'] = df['Device'].str.lower()
-                df['Device'] = df['Device'].str.replace(
-                    'smartphones', 'mobile')
-                df['Device'] = df['Device'].str.replace('tablets', 'tablet')
-                df['Device'] = df['Device'].str.replace('pc', 'desktop')
-                df['Devices'] = df.apply(self.desmob, axis=1)
-                del df['Device']
-                df.rename(columns={'Devices': 'Device'}, inplace=True)
-                return df
+                return data['data']
+            else:
+                logging.error(f'Ошибка API: {response.status_code}')
+                return []
         except Exception as e:
             logging.error(f'Ошибка: {e}')
-            raise
+            return []
+
+    def _get_all_metrika_data(self):
+        result = []
+        data = self._get_metrica_reports()
+
+        for i in data:
+            if '-' in str(i['dimensions'][1]['name']):
+                result.append(
+                    [
+                        i['dimensions'][0]['name'],
+                        i['dimensions'][1]['name'].split('|')[0],
+                        i['dimensions'][2]['name'],
+                        int(i['metrics'][0]),
+                        int(float(i['metrics'][1]))
+                    ]
+                )
+
+        df = pd.DataFrame(result, columns=self.report_fields)
+        campaign_parts = self._split_campaign(df['CampaignName'])
+        df = pd.concat([df, campaign_parts], axis=1)
+        df = self._rename_columns(df)
+        return df
 
     def _get_filtered_cache_data(self, filename_data: str) -> pd.DataFrame:
         """Метод получает отфильтрованные данные из кэш-файла."""

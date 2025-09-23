@@ -25,7 +25,7 @@ load_dotenv()
 setup_logging()
 
 
-class DirectSaveClient:
+class YandexDirectReports:
     """Класс для получения и сохранения данных отчетов из Яндекс.Директ."""
 
     def __init__(
@@ -33,16 +33,18 @@ class DirectSaveClient:
         token: str,
         dates_list: list,
         login: list,
+        report_fields: list = REPORT_FIELDS_DIRECT,
         columns: list = DEFAULT_COLUMNS_CAMPAIGN,
         folder_name: str = DEFAULT_FOLDER
     ):
         if not token:
             logging.error('Токен отсутствует или не действителен')
         self.token = token
-        self.logins = login
         self.dates_list = dates_list
-        self.folder = folder_name
+        self.logins = login
+        self.report_fields = report_fields
         self.columns = columns
+        self.folder = folder_name
 
     def _split_campaign(self, column):
         df = pd.DataFrame()
@@ -99,7 +101,7 @@ class DirectSaveClient:
                     "DateFrom": date_from,
                     "DateTo": date_to
                 },
-                "FieldNames": REPORT_FIELDS_DIRECT[0],
+                "FieldNames": self.report_fields,
                 "ReportName": REPORT_NAME,
                 "ReportType": "CUSTOM_REPORT",
                 "DateRangeType": "CUSTOM_DATE",
@@ -219,7 +221,6 @@ class DirectSaveClient:
             return pd.DataFrame()
 
         data = pd.concat(data_frames, ignore_index=True)
-        temp_cache_path = self._get_file_path('test1.csv')
         data['Source'] = 'yandex'
         data['Cost'] = data['Cost'] * 1.2 / 1000000
         data = data[~data['Date'].str.contains(
@@ -227,13 +228,6 @@ class DirectSaveClient:
             case=False,
             na=False
         )]
-        data.to_csv(
-            temp_cache_path,
-            index=False,
-            header=True,
-            sep=';',
-            encoding='utf-8'
-        )
         return data
 
     def _get_filtered_cache_data(self, filename_data: str) -> pd.DataFrame:

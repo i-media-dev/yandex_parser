@@ -7,6 +7,12 @@ YANDEX_METRICA_URL = 'https://api-metrika.yandex.net/stat/v1/data'
 YANDEX_APPMETRICA_URL = 'https://api.appmetrica.yandex.ru/stat/v1/data'
 """URL для запроса отчета из Appmetrica."""
 
+DEFAULT_DELIMETER = '-'
+"""Делиметр Campaign по умолчанию."""
+
+DEFAULT_VALUE = '-all'
+"""Значение для подставновки в пустые ячейки по умолчанию."""
+
 DATE_FORMAT = '%Y-%m-%d'
 """Формат дат по умолчанию ('%Y-%m-%d')."""
 
@@ -19,7 +25,7 @@ DEFAULT_FOLDER = 'data'
 DAYS_TO_GENERATE_DIRECT = 45
 """Количество дней для генерации списка дат по умолчанию."""
 
-DAYS_TO_GENERATE_METRICA = 45
+DAYS_TO_GENERATE_METRICA = 4
 """Количество дней для генерации списка дат по умолчанию."""
 
 DAYS_TO_GENERATE_APPMETRICA = 1
@@ -31,7 +37,7 @@ DAYS_BEFORE = 7
 AUCHAN_ID = ''
 """ID Ашан."""
 
-EAPTEKA_ID = ''
+EAPTEKA_ID = '22004554'
 """ID Еаптека."""
 
 CITILINK_ID = ''
@@ -51,6 +57,7 @@ DEFAULT_COLUMNS_CAMPAIGN = [
     'Subject',
     'Url_type'
 ]
+"""Поля для разбивки Campaign."""
 
 REPORT_FIELDS_DIRECT = [
     "Date",
@@ -60,7 +67,25 @@ REPORT_FIELDS_DIRECT = [
     "Impressions",
     "Clicks",
     "Cost"
-],
+]
+"""Запрашиваемые поля для Яндекс Директ."""
+
+REPORT_FIELDS_APPMETRICA = [
+    'Date',
+    'CampaignName',
+    'Transactions',
+    'Revenue'
+]
+"""Запрашиваемые поля для Яндекс Аппметрики."""
+
+REPORT_FIELDS_METRICA = [
+    'Date',
+    'CampaignName',
+    'Device',
+    'Transactions',
+    'Revenue'
+]
+"""Запрашиваемые поля для Яндекс Аппметрики."""
 
 AUCHAN_CLIENT_LOGINS = []
 """Список логинов Ашан."""
@@ -161,3 +186,11 @@ EAPTEKA_CLIENT_LOGINS = [
     'imedia-eapteka',
 ]
 """Список логинов Еаптека."""
+
+
+DEVICES = {
+    'PC': 'DESKTOP',
+    'Smartphones': 'MOBILE',
+    'TV': 'SMART_TV',
+    'Tablets': 'TABLET'
+}

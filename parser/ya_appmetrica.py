@@ -7,15 +7,16 @@ import pandas as pd
 import requests
 
 from parser.constants import (
-    APP_TYPES,
-    CAMPAIGN_CATEGORIES,
     DATE_FORMAT,
     DAYS_BEFORE,
+    DEFAULT_COLUMNS_CAMPAIGN,
     DEFAULT_FOLDER,
-    DEFAULT_RETURNES,
-    LIMIT,
-    PLATFORM_TYPES,
-    YANDEX_APPMETRICA_URL
+    REPORT_FIELDS_APPMETRICA,
+    YANDEX_APPMETRICA_URL,
+    APPMETRICA_LIMIT,
+    DEVICES,
+    DEFAULT_VALUE,
+    DEFAULT_DELIMETER
 )
 from parser.logging_config import setup_logging
 
@@ -23,20 +24,24 @@ load_dotenv()
 setup_logging()
 
 
-class AppmetricaSaveClient:
+class YandexAppMetricaReports:
 
     def __init__(
         self,
         token: str,
         dates_list: list,
+        report_fields: list = REPORT_FIELDS_APPMETRICA,
+        columns: list = DEFAULT_COLUMNS_CAMPAIGN,
         folder_name: str = DEFAULT_FOLDER,
-        limit: str = LIMIT
+        limit: str = APPMETRICA_LIMIT
     ):
         if not token:
             logging.error('Токен отсутствует или не действителен')
         self.token = token
-        self.folder = folder_name
         self.dates_list = dates_list
+        self.report_fields = report_fields
+        self.columns = columns
+        self.folder = folder_name
         self.limit = limit or '1000'
 
     def _get_file_path(self, filename: str) -> Path:
@@ -48,6 +53,23 @@ class AppmetricaSaveClient:
         except Exception as e:
             logging.error(f'Ошибка: {e}')
             raise
+
+    def _split_campaign(
+        self,
+        column,
+        default_value: str = DEFAULT_VALUE,
+        delimeter: str = DEFAULT_DELIMETER
+    ):
+        df = pd.DataFrame()
+
+        for i, value in enumerate(self.columns):
+            df[value] = column.apply(
+                lambda x: (
+                    str(x) + default_value *
+                    ((len(self.columns)-1)-str(x).count(delimeter))
+                ).split('-', len(self.columns)-1)[i]
+            )
+        return df
 
     def _get_appmetrica_report(
         self,
@@ -170,9 +192,8 @@ class AppmetricaSaveClient:
         для всех клиентов и периодов.
         """
         data_list = []
-        df_new = pd.DataFrame(
-            columns=['Date', 'CampaignName', 'transactions', 'revenue']
-        )
+
+        df = pd.DataFrame(columns=self.report_fields)
         temp_cache_path = self._get_file_path(filename_temp)
         try:
             campaign_df = pd.read_csv(
@@ -183,7 +204,7 @@ class AppmetricaSaveClient:
             campaigns_list = campaign_df['CampaignName'].unique().tolist()
         except FileNotFoundError:
             logging.error('Файл с кампаниями не найден')
-            return df_new
+            return df
 
         for date_str in self.dates_list:
             for campaign_name in campaigns_list:
@@ -203,24 +224,17 @@ class AppmetricaSaveClient:
                         f'на дату {date_str}: {e}')
                     continue
         if data_list:
-            df_new = pd.DataFrame(
-                data_list,
-                columns=['Date', 'CampaignName', 'transactions', 'revenue']
-            )
+            df = pd.DataFrame(data_list, columns=self.report_fields)
         else:
-            df_new = pd.DataFrame(
-                columns=['Date', 'CampaignName', 'transactions', 'revenue']
-            )
+            df = pd.DataFrame(columns=self.report_fields)
 
-        df_new['transactions'] = df_new['transactions'].astype(int)
-        df_new['revenue'] = df_new['revenue'].astype(float)
-        df_new['Device'] = 'mobile'
-        df_new['sn'] = df_new.apply(self._get_campaign_category, axis=1)
-        df_new['type'] = df_new.apply(self._get_platform_type, axis=1)
-        df_new['apptype'] = 'web'
-        df_new['geo'] = df_new.apply(self._get_geo, axis=1)
+        df['Transactions'] = df['Transactions'].astype(int)
+        df['Revenue'] = df['Revenue'].astype(float)
+        df['Device'] = 'MOBILE'
+        campaign_parts = self._split_campaign(df['CampaignName'])
+        df = pd.concat([df, campaign_parts], axis=1)
 
-        return df_new
+        return df
 
     def save_data(
         self,
