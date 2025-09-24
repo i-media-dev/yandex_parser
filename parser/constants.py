@@ -34,14 +34,23 @@ DAYS_TO_GENERATE_APPMETRICA = 1
 DAYS_BEFORE = 7
 """Период в днях (7)."""
 
-AUCHAN_ID = ''
-"""ID Ашан."""
+AUCHAN_M_ID = '24584168'
+"""ID Ашан Метрика."""
 
-EAPTEKA_ID = '22004554'
-"""ID Еаптека."""
+EAPTEKA_M_ID = '22004554'
+"""ID Еаптека Метрика."""
 
-CITILINK_ID = ''
-"""ID Ситилинк."""
+CITILINK_M_ID = '155462'
+"""ID Ситилинк Метрика."""
+
+AUCHAN_AM_ID = '4431094'
+"""ID Ашан АппМетрика."""
+
+EAPTEKA_AM_ID = '2550202'
+"""ID Еаптека АппМетрика."""
+
+CITILINK_AM_ID = '4309264'
+"""ID Ситилинк АппМетрика."""
 
 APPMETRICA_LIMIT = '1000'
 """Лимит выдачи отчета на страницу."""
@@ -194,3 +203,11 @@ DEVICES = {
     'TV': 'SMART_TV',
     'Tablets': 'TABLET'
 }
+"""Словарь стандаритизации значений колонки Device"""
+
+CLIENT_INFO = {
+    'auchan': (AUCHAN_CLIENT_LOGINS, AUCHAN_M_ID, AUCHAN_AM_ID),
+    'citilink': (CITILINK_CLIENT_LOGINS, CITILINK_M_ID, CITILINK_AM_ID),
+    'eapteka': (EAPTEKA_CLIENT_LOGINS, EAPTEKA_M_ID, EAPTEKA_AM_ID)
+}
+"""Словарь сгруппированной информации по клиентам."""

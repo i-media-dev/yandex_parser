@@ -30,6 +30,7 @@ class YandexAppMetricaReports:
         self,
         token: str,
         dates_list: list,
+        shop_id: str,
         report_fields: list = REPORT_FIELDS_APPMETRICA,
         columns: list = DEFAULT_COLUMNS_CAMPAIGN,
         folder_name: str = DEFAULT_FOLDER,
@@ -39,6 +40,7 @@ class YandexAppMetricaReports:
             logging.error('Токен отсутствует или не действителен')
         self.token = token
         self.dates_list = dates_list
+        self.shop_id = shop_id
         self.report_fields = report_fields
         self.columns = columns
         self.folder = folder_name
@@ -73,7 +75,6 @@ class YandexAppMetricaReports:
 
     def _get_appmetrica_report(
         self,
-        shop_id: str,
         date_reports: str,
         campaign_name: str,
     ) -> list:
@@ -89,7 +90,7 @@ class YandexAppMetricaReports:
             headers = {
                 "Authorization": f"OAuth {self.token}"}
             params = {
-                "ids": shop_id,
+                "ids": self.shop_id,
                 "date1": date_reports,
                 "date2": date_reports,
                 "group": "Day",
@@ -184,7 +185,6 @@ class YandexAppMetricaReports:
 
     def _get_all_appmetrica_data(
         self,
-        shop_id: str,
         filename_temp: str
     ) -> pd.DataFrame:
         """
@@ -212,11 +212,7 @@ class YandexAppMetricaReports:
                     if 'rmp' in campaign_name:
                         continue
 
-                    data = self._get_appmetrica_report(
-                        shop_id,
-                        date_str,
-                        campaign_name
-                    )
+                    data = self._get_appmetrica_report(date_str, campaign_name)
                     data_list.append(data)
                 except Exception as e:
                     logging.error(
@@ -238,12 +234,11 @@ class YandexAppMetricaReports:
 
     def save_data(
         self,
-        shop_id: str,
         filename_temp: str,
         filename_data: str
     ) -> None:
         """Метод сохраняет новые данные, объединяя с существующими."""
-        df_new = self._get_all_appmetrica_data(shop_id, filename_temp)
+        df_new = self._get_all_appmetrica_data(filename_temp)
         df_old = self._get_filtered_cache_data(filename_data)
         try:
             temp_cache_path = self._get_file_path(filename_data)

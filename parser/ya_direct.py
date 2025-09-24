@@ -10,10 +10,7 @@ import pandas as pd
 import requests
 
 from parser.constants import (
-    # CAMPAIGN_CATEGORIES,
     DEFAULT_FOLDER,
-    # DEFAULT_RETURNES,
-    # PLATFORM_TYPES,
     DEFAULT_COLUMNS_CAMPAIGN,
     REPORT_FIELDS_DIRECT,
     REPORT_NAME,

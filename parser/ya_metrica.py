@@ -10,7 +10,6 @@ from parser.logging_config import setup_logging
 from parser.constants import (
     DEFAULT_FOLDER,
     YANDEX_METRICA_URL,
-    EAPTEKA_ID,
     METRICA_LIMIT,
     REPORT_FIELDS_METRICA,
     DEFAULT_COLUMNS_CAMPAIGN,
