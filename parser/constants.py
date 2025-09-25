@@ -206,8 +206,8 @@ DEVICES = {
 """Словарь стандаритизации значений колонки Device"""
 
 CLIENT_INFO = {
-    'auchan': (AUCHAN_CLIENT_LOGINS, AUCHAN_M_ID, AUCHAN_AM_ID),
-    'citilink': (CITILINK_CLIENT_LOGINS, CITILINK_M_ID, CITILINK_AM_ID),
+    # 'auchan': (AUCHAN_CLIENT_LOGINS, AUCHAN_M_ID, AUCHAN_AM_ID),
+    # 'citilink': (CITILINK_CLIENT_LOGINS, CITILINK_M_ID, CITILINK_AM_ID),
     'eapteka': (EAPTEKA_CLIENT_LOGINS, EAPTEKA_M_ID, EAPTEKA_AM_ID)
 }
 """Словарь сгруппированной информации по клиентам."""

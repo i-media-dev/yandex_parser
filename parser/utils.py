@@ -37,7 +37,8 @@ def get_date_list(
 def initialize_components(
     logins: list[str],
     client_m_id: str,
-    client_am_id: str
+    client_am_id: str,
+    client_name: str
 ) -> tuple:
     """
     Инициализирует и возвращает все необходимые
@@ -61,7 +62,7 @@ def initialize_components(
         token=token_metrica,
         dates_list=date_list_metrica,
         login=logins,
-        counter_id=client_m_id
+        metrica_id=client_m_id
     )
 
     direct = YandexDirectReports(
@@ -73,7 +74,8 @@ def initialize_components(
     appmetrica = YandexAppMetricaReports(
         token=token_appmetrica,
         dates_list=date_list_appmetrica,
-        shop_id=client_am_id
+        appmetrica_id=client_am_id,
+        filename_temp=f'{client_name}_direct.csv',
     )
 
     return appmetrica, direct, metrica
@@ -88,7 +90,4 @@ def run(
     """Функция запуска активных методов объектов класса."""
     obj_direct.save_data(filename_data=f'{client_name}_direct.csv')
     obj_metrica.save_data(filename_data=f'{client_name}_metrica.csv')
-    obj_appmetrica.save_data(
-        filename_temp=f'{client_name}_direct.csv',
-        filename_data=f'{client_name}_appmetrica.csv'
-    )
+    obj_appmetrica.save_data(filename_data=f'{client_name}_appmetrica.csv')

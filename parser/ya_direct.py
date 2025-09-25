@@ -3,7 +3,6 @@ import json
 import logging
 import time
 from typing import Any
-from pathlib import Path
 
 from dotenv import load_dotenv
 import pandas as pd
@@ -17,13 +16,14 @@ from parser.constants import (
     YANDEX_DIRECT_URL
 )
 from parser.logging_config import setup_logging
+from parser.mixins import ColumnMixin, FileMixin
 
 load_dotenv()
 setup_logging()
 
 
-class YandexDirectReports:
-    """Класс для получения и сохранения данных отчетов из Яндекс.Директ."""
+class YandexDirectReports(ColumnMixin, FileMixin):
+    """Класс для получения и сохранения данных отчетов из Яндекс direct."""
 
     def __init__(
         self,
@@ -34,25 +34,17 @@ class YandexDirectReports:
         columns: list = DEFAULT_COLUMNS_CAMPAIGN,
         folder_name: str = DEFAULT_FOLDER
     ):
+        FileMixin.__init__(
+            self,
+            dates_list=dates_list,
+            folder_name=folder_name
+        )
+        ColumnMixin.__init__(self, columns=columns)
         if not token:
             logging.error('Токен отсутствует или не действителен')
         self.token = token
-        self.dates_list = dates_list
         self.logins = login
         self.report_fields = report_fields
-        self.columns = columns
-        self.folder = folder_name
-
-    def _split_campaign(self, column):
-        df = pd.DataFrame()
-
-        for i, value in enumerate(self.columns):
-            df[value] = column.apply(
-                lambda x: (
-                    str(x) + '-all'*((len(self.columns)-1)-str(x).count('-'))
-                ).split('-', len(self.columns)-1)[i]
-            )
-        return df
 
     def _decode_if_bytes(self, x: Any) -> Any:
         """
@@ -64,16 +56,6 @@ class YandexDirectReports:
         else:
             return x
 
-    def _get_file_path(self, filename: str) -> Path:
-        """Защищенный метод. Создает путь к файлу в указанной папке."""
-        try:
-            file_path = Path(__file__).parent.parent / self.folder
-            file_path.mkdir(parents=True, exist_ok=True)
-            return file_path / filename
-        except Exception as e:
-            logging.error(f'Ошибка: {e}')
-            raise
-
     def _get_direct_report(
         self,
         login: str,
@@ -82,7 +64,7 @@ class YandexDirectReports:
     ) -> str:
         """
         Защищенный метод.
-        Получает отчет из Яндекс.Директ для указанного логина и периода.
+        Получает отчет из Яндекс direct для указанного логина и периода.
         """
 
         headers = {
@@ -185,7 +167,7 @@ class YandexDirectReports:
         return response.text
 
     def _get_all_direct_data(self) -> pd.DataFrame:
-        """Метод получает данные из Яндекс.Директ для всех клиентов."""
+        """Метод получает данные из Яндекс direct для всех клиентов."""
         data_frames = []
 
         for i, login in enumerate(self.logins, 1):
@@ -227,72 +209,10 @@ class YandexDirectReports:
         )]
         return data
 
-    def _get_filtered_cache_data(self, filename_data: str) -> pd.DataFrame:
-        """Метод получает отфильтрованные данные из кэш-файла."""
-        temp_cache_path = self._get_file_path(filename_data)
-        try:
-            old_df = pd.read_csv(
-                temp_cache_path,
-                sep=';',
-                encoding='cp1251',
-                header=0
-            )
-            for dates in self.dates_list:
-                old_df = old_df[
-                    ~old_df['Date'].fillna('').str.contains(
-                        fr'{dates}',
-                        case=False,
-                        na=False
-                    )
-                ]
-
-            return old_df
-        except FileNotFoundError:
-            logging.warning('Файл кэша не найден. Первый запуск.')
-            return pd.DataFrame()
-        except pd.errors.EmptyDataError:
-            logging.warning('Файл кэша пустой.')
-            return pd.DataFrame()
-        except Exception as e:
-            logging.error(f'Ошибка: {e}')
-            raise
-
     def save_data(self, filename_data: str) -> None:
-        """Метод сохраняет новые данные, объединяя с существующими."""
+        """
+        Метод сохраняет новые данные, объединяя с существующими.
+        Наследуется от миксина FileMixin
+        """
         df_new = self._get_all_direct_data()
-        df_old = self._get_filtered_cache_data(filename_data)
-        try:
-            temp_cache_path = self._get_file_path(filename_data)
-            if df_new.empty:
-                logging.warning('Нет новых данных для сохранения')
-                return
-            if not isinstance(df_old, pd.DataFrame) or df_old.empty:
-                df_new.to_csv(
-                    temp_cache_path,
-                    index=False,
-                    header=True,
-                    sep=';',
-                    encoding='cp1251'
-                )
-                logging.info(
-                    'Новые данные сохранены. Исторические данные отсутствовали'
-                )
-                return
-            for dates in self.dates_list:
-                df_old = df_old[~df_old['Date'].fillna('').str.contains(
-                    fr'{dates}',
-                    case=False,
-                    na=False
-                )]
-
-            df_old = pd.concat([df_new, df_old])
-            df_old.to_csv(
-                temp_cache_path,
-                index=False,
-                header=True,
-                sep=';',
-                encoding='cp1251'
-            )
-            logging.info('Данные успешно обновлены')
-        except Exception as e:
-            logging.error(f'Ошибка во время обновления: {e}')
+        super().save_data(df_new, filename_data)

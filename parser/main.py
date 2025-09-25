@@ -11,10 +11,11 @@ def main():
         appmetrica, direct, metrica = initialize_components(
             client_logins,
             client_m_id,
-            client_am_id
+            client_am_id,
+            client_name
         )
         run(direct, metrica, appmetrica, client_name)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
